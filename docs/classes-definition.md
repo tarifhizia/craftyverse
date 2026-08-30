@@ -255,7 +255,7 @@ class Planet {
 
 - `generate()` — Generates the northern plan nodes with the pentagon direction pointing to the top and the southern plan nodes with the pentagon direction pointing to the bottom. Then connects missing nodes between the northern and southern plans to each other.
 - `draw()` — Draws both the northern and southern plans in an SVG, displaying all relevant information doubled for clarity.
-- `split()` — Iterates through each node in both northern and southern plans, calls `split()` on each node, replace current by returned node and connects the newly created nodes I j k between adjacent split nodes (nodeI, nodeJ, nodeK) after splitting them too to maintain topology. 
+- `split()` — Iterates through north plan node, calls `split()` on each node, replace current by returned node and connects the newly created nodes I j k between adjacent split nodes (nodeI, nodeJ, nodeK) after splitting them too to maintain topology. 
 
 ### Generate function Rules
 
