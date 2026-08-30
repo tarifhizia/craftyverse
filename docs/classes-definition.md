@@ -3,7 +3,7 @@
 ## Node Class Definition
 
 ### Overview
-The `Node` class represents a geometric structure composed of a center point, directional vectors, UV coordinates, and recursive child nodes. This design supports hierarchical or fractal-like spatial [...]
+The `Node` class represents a geometric structure composed of a center point, directional vectors, UV coordinates, and recursive child nodes. This design supports hierarchical or fractal-like spati[...]
 
 ### Structure
 
@@ -13,6 +13,7 @@ The `Node` class represents a geometric structure composed of a center point, di
 - `direction_to_origin` — Vector from the node center toward the origin.
 - `directions` — Array of directional vectors (`[i, j, k]`).
 - `uvs` — Array of UV coordinates (`[uvA, uvB, uvC]`).
+- `direction_of_node` — Direction set type for the node (NormalDirection or RevertedDirection).
 - **Topology**
 - `children` — List of child nodes (3 nodes).
 - `level` — Integer representing the split depth of the node (defaults to 0).
@@ -27,6 +28,7 @@ class Node {
   Vector direction_to_origin
   Vector[] directions     // [i, j, k]
   UV[] uvs                // [uvA, uvB, uvC]
+  DirectionSet direction_of_node // NormalDirection or RevertedDirection
 
   // --- Topology ---
   List<Node> children     //  3 nodes
@@ -38,7 +40,7 @@ class Node {
 
 ### Methods
 
-- `split()` — Splits the current node into four new nodes according to geometric construction, direction set, topology, and identity rules described below. When splitting, the method MUST increment the split `level` for each of the four created nodes by one (new_node.level = old_level + 1). The "old level" refers to the pre-split `level` value of the node on which `split()` was called.
+- `split()` — Splits the current node into four new nodes according to geometric construction, direction set, topology, and identity rules described below. When splitting, the method MUST increm[...]
 
 ---
 
@@ -74,11 +76,11 @@ Each new node receives the corresponding UV triplet.
 
 1. Direction Set Inheritance
 
-- Corner nodes inherit the same direction set (First or Second) as the parent.
+- Corner nodes inherit the same direction set (NormalDirection or RevertedDirection) as the parent.
 - The center node always flips direction set:
 
-- If parent uses First, center uses Second
-- If parent uses Second, center uses First
+- If parent uses NormalDirection, center uses RevertedDirection
+- If parent uses RevertedDirection, center uses NormalDirection
 This matches your existing rule for nodeJ mirroring.
 
 1. Direction Vector Recalculation
@@ -87,12 +89,12 @@ For each new node:
 - Compute vector V = center → origin
 - Apply direction set rules:
 
-- First set:
+- NormalDirection set:
 
 - I ⊥ AB
 - J ⊥ BC
 - K ⊥ CA
-- Second set:
+- RevertedDirection set:
 
 - K ⊥ AB
 - J ⊥ BC
@@ -125,7 +127,7 @@ Each new node must store:
 - New center
 - New UVs
 - New directions
-- Direction set type (First/Second)
+- Direction set type (NormalDirection/RevertedDirection)
 - `level` — set to the parent's previous level + 1 (i.e. new_node.level = old_level + 1). The "old level" is the node's level before calling split().
 
 ### Full Method Specification
@@ -208,17 +210,17 @@ class Plan {
 - For each Node, the direction set depends on the node's center and the vector from the center to the origin.
 - two main direction sets exist:
 
-- **First:**
+- **NormalDirection:**
 
 - I = perpendicular to AB going from center
 - J = perpendicular to BC going from center
 - K = perpendicular to CD going from center
-- **Second:**
+- **RevertedDirection:**
 
 - K = perpendicular to AB going from center
 - J = perpendicular to BC going from center
 - I = perpendicular to CD going from center
-- The choice between First and Second depends on the node's center and the vector from center to origin.
+- The choice between NormalDirection and RevertedDirection depends on the node's center and the vector from center to origin.
 - Child node relationships:
 
 - child nodeI should have current node as target nodeK
@@ -226,9 +228,9 @@ class Plan {
 - child nodeJ should have current node as target nodeJ
 - Direction inheritance:
 
-- nodeJ always switches vector directions between First and Second (if current is First, childJ uses Second, and vice versa)
+- nodeJ always switches vector directions between NormalDirection and RevertedDirection (if current is NormalDirection, childJ uses RevertedDirection, and vice versa)
 - nodeI and nodeK use the same direction set as the current node
-- Triangle vertices (A, B, C), center, triangle direction (First or Second), and vector from center to origin determine the geometry of the node's triangle.
+- Triangle vertices (A, B, C), center, triangle direction (NormalDirection or RevertedDirection), and vector from center to origin determine the geometry of the node's triangle.
 - The base of the first five triangles should be the pentagon sides and the sides of the triangle are the diameter of the pentagon , and the apex of each triangle is at the origin. This setup rot[...]
 - if the pentagon direction top or take the normal first and second, if bottom first become second and second become first
 - The process starts by generating 5 triangles forming a pentagon where nodes connect through their K vectors and the next node, and all nodes create the I node as a mirror cut through the triang[...]
@@ -287,15 +289,15 @@ An icosahedron breaks down into two 5-triangle pentagonal caps (North and South)
 - Both caps produce 5 base triangles (nodes 0 through 4) arranged circularly, linked internally via `J` (mirrored base) and adjacent `K`/`I` vectors.
 2. **Interstitial Belt Linkage (North-to-South Alignment)**
 
-- Every North base node Nm​ (where m∈{5,6,7,8,9}) has two open directional slots (I and K).
-- Because the South cap is inverted and offset by π/5 (36°), South base nodes Sn​ interlock with North nodes in an alternating zig-zag fashion:
+- Every North base node Nm  (where m {5,6,7,8,9}) has two open directional slots (I and K).
+- Because the South cap is inverted and offset by π/5 (36°), South base nodes Sn  interlock with North nodes in an alternating zig-zag fashion:
 
 - **Link Rule A (Node I Connection):** Connect `North[m].children[I]` to `South[m].node`. Reciprocally, assign `South[m].children[K] = North[m].node`.
 - **Link Rule B (Node K Connection):** Connect `North[m].children[K]` to `South[(m + 1) % 5].node`. Reciprocally, assign `South[(m + 1) % 5].children[I] = North[m].node`.
 3. **Direction & Alignment Inversion**n
 
 - **Vector Reversal:** South plan directional vectors (I, J, K) must invert their Z-axis (or vertical orientation parameter) relative to North.
-- **Direction Set Swap:** If `North[m]` uses the **First** direction set, the corresponding mirrored connection entry on `South[m]` must default to the **Second** direction set to maintain topolo[...]
+- **Direction Set Swap:** If `North[m]` uses the **NormalDirection** direction set, the corresponding mirrored connection entry on `South[m]` must default to the **RevertedDirection** direction set to maintain topolo[...]
 
 ---
 
@@ -364,3 +366,4 @@ while not (nextNode.nexti.level == currentNode.level and nextNode.nextj.level ==
 - This specification assumes consistent use of child index naming (I, J, K) mapped to children[0..2] for implementation.
 
 ---
+
