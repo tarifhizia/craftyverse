@@ -99,7 +99,7 @@ Perpendiculars must be computed from the new triangle edges, not the parent.
 
 1. Each new node has 3 children
 
-- But after split(), all children are null.
+- But after split(),  only the node center should be connected to the new created nodes A B C
 - Split does not recursively generate children; it only produces the 4 new nodes.
 
 1. Parent node is replaced
@@ -107,14 +107,14 @@ Perpendiculars must be computed from the new triangle edges, not the parent.
 - split() returns:
 
 ```
-[ nodeA, nodeB, nodeC, nodeCenter ]
+nodeCenter 
 ```
 
 - The caller decides how to reattach them.
 
 1. No cross​‑connections
 
-- Split does not connect the new nodes to each other.
+- Split does not connect the new nodes A B C to each other.
 - This avoids interfering with Plan/Planet generation rules.
 
 ### Node Identity Rules
@@ -125,7 +125,6 @@ Each new node must store:
 - New UVs
 - New directions
 - Direction set type (First/Second)
-- Empty children list
 
 ### Full Method Specification
 **Signature**
@@ -135,12 +134,9 @@ Node[] split()
 ```
 **Returns**
 
-An array of 4 Nodes:
+Nodes:
 
-- Corner node at A
-- Corner node at B
-- Corner node at C
-- Center node
+- Center node connected to each node corner
 **Steps**
 
 - Compute midpoints
@@ -150,7 +146,8 @@ An array of 4 Nodes:
 - Determine direction set for each
 - Compute perpendicular directions
 - Create nodes
-- Return them
+- connect nodes to center node
+- Return center node 
 
 ---
 
@@ -261,7 +258,7 @@ class Planet {
 
 - `generate()` — Generates the northern plan nodes with the pentagon direction pointing to the top and the southern plan nodes with the pentagon direction pointing to the bottom. Then connects missing nodes between the northern and southern plans to each other.
 - `draw()` — Draws both the northern and southern plans in an SVG, displaying all relevant information doubled for clarity.
-- `split()` — Iterates through each node in both northern and southern plans, calls `split()` on each node, and connects the newly created nodes between adjacent split nodes (nodeI, nodeJ, nodeK) to maintain topology.
+- `split()` — Iterates through each node in both northern and southern plans, calls `split()` on each node, replace current by returned node and connects the newly created nodes I j k between adjacent split nodes (nodeI, nodeJ, nodeK) after splitting them too to maintain topology. 
 
 ### Generate function Rules
 
