@@ -3,7 +3,7 @@
 ## Node Class Definition
 
 ### Overview
-The `Node` class represents a geometric structure composed of a center point, directional vectors, UV coordinates, and recursive child nodes. This design supports hierarchical or fractal-like spatial structures.
+The `Node` class represents a geometric structure composed of a center point, directional vectors, UV coordinates, and recursive child nodes. This design supports hierarchical or fractal-like spatial organization.
 
 ### Structure
 
@@ -38,9 +38,25 @@ class Node {
 }
 ```
 
+### Direction Sets
+
+The `direction_of_node` attribute determines how the three perpendicular directions (I, J, K) are computed relative to the triangle edges:
+
+- **NormalDirection:**
+  - I = perpendicular to AB going from center
+  - J = perpendicular to BC going from center
+  - K = perpendicular to CA going from center
+
+- **RevertedDirection:**
+  - K = perpendicular to AB going from center
+  - J = perpendicular to BC going from center
+  - I = perpendicular to CA going from center
+
+The choice between NormalDirection and RevertedDirection depends on the node's center and the vector from center to origin.
+
 ### Methods
 
-- `split()` — Splits the current node into four new nodes according to geometric construction, direction set, topology, and identity rules described below. When splitting, the method MUST increment the level and establish bidirectional connections between the four resulting nodes.
+- `split()` — Splits the current node into four new nodes according to geometric construction, direction set, topology, and identity rules described below. When splitting, the method MUST increment the level of each new node and establish internal interconnections.
 
 ---
 
@@ -258,14 +274,14 @@ class Planet {
 
 ### Methods
 
-- `generate()` — Generates the northern plan nodes with the pentagon direction pointing to the top and the southern plan nodes with the pentagon direction pointing to the bottom. Then connects the north and south caps via their I and K node links.
+- `generate()` — Generates the northern plan nodes with the pentagon direction pointing to the top and the southern plan nodes with the pentagon direction pointing to the bottom. Then connects the north and south caps via interstitial belt linkage.
 - `draw()` — Draws both the northern and southern plans in an SVG, displaying all relevant information doubled for clarity.
 - `split()` — Iterates through north plan nodes, calls `split()` on each node, replaces current by returned node and connects the newly created nodes I, J, K between adjacent split nodes.
 
 ### Generate function Rules
 
 ### **Core Principle: Dual-Pentagon Dual-Cap Assembly**
-An icosahedron breaks down into two 5-triangle pentagonal caps (North and South) and a 10-triangle middle antiprismatic belt. Connecting North nodes to South nodes via their remaining unconnected directional ports establishes the complete structure.
+An icosahedron breaks down into two 5-triangle pentagonal caps (North and South) and a 10-triangle middle antiprismatic belt. Connecting North nodes to South nodes via their remaining unconnected directional ports creates the complete structure.
 
 ```
        [ North Cap: 5 Triangles ]
@@ -295,14 +311,14 @@ An icosahedron breaks down into two 5-triangle pentagonal caps (North and South)
 3. **Direction & Alignment Inversion**
 
 - **Vector Reversal:** South plan directional vectors (I, J, K) must invert their Z-axis (or vertical orientation parameter) relative to North.
-- **Direction Set Swap:** If `North[m]` uses the **NormalDirection** direction set, the corresponding mirrored connection entry on `South[m]` must default to the **RevertedDirection** direction set to maintain the icosahedron's geometric balance.
+- **Direction Set Swap:** If `North[m]` uses the **NormalDirection** direction set, the corresponding mirrored connection entry on `South[m]` must default to the **RevertedDirection** direction set to maintain proper alignment.
 
 ---
 
 ## Planet.split() Method Specification
 
 ### Overview
-The `Planet.split()` method coordinates splitting across the north (and symmetric south) caps and reconnects the resulting split-centers to grow the antiprismatic belt between caps. Splits are performed in synchronized waves to maintain topological consistency.
+The `Planet.split()` method coordinates splitting across the north (and symmetric south) caps and reconnects the resulting split-centers to grow the antiprismatic belt between caps. Splits are performed level-by-level.
 
 ### Connection rules
 
@@ -310,7 +326,7 @@ The `Planet.split()` method coordinates splitting across the north (and symmetri
 - The connection pattern between newly created centers uses the following pointer rewiring after each pair-split operation:
   - nodeSplitedCenter.nexti.nexti = nodeTargetSplitedCenter.nextj.nextk
   - nodeSplitedCenter.nextj.nexti = nodeTargetSplitedCenter.nextk.nextk
-- The traversal progresses along nexti until it completes a loop back to the start; then it begins the same traversal starting from the start node's nodeJ and repeats. The whole routine terminates when all nodes at the new level have been processed and their interconnections established.
+- The traversal progresses along nexti until it completes a loop back to the start; then it begins the same traversal starting from the start node's nodeJ and repeats. The whole routine terminates when all nodes have been split to the target depth.
 
 ### Signature
 
@@ -362,5 +378,3 @@ while not (nextNode.nexti.level == currentNode.level and nextNode.nextj.level ==
 - All level comparisons refer to the node.level (or split depth). Comparing levels allows the algorithm to detect whether a neighbour has already been processed to the same depth.
 - Pointer assignments (nexti/nextj/nextk) must preserve reciprocity where required by the topology (i.e., when setting A.nexti = B, ensure the corresponding reciprocal pointer on B is set if the relationship is bidirectional).
 - This specification assumes consistent use of child index naming (I, J, K) mapped to children[0..2] for implementation.
-
----
