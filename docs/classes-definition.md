@@ -3,7 +3,7 @@
 ## Node Class Definition
 
 ### Overview
-The `Node` class represents a geometric structure composed of a center point, directional vectors, UV coordinates, and recursive child nodes. This design supports hierarchical or fractal-like spatial relationships.
+The `Node` class represents a geometric structure composed of a center point, directional vectors, UV coordinates, and recursive child nodes. This design supports hierarchical or fractal-like spatial structures.
 
 ### Structure
 
@@ -40,7 +40,7 @@ class Node {
 
 ### Methods
 
-- `split()` — Splits the current node into four new nodes according to geometric construction, direction set, topology, and identity rules described below. When splitting, the method MUST increment the level.
+- `split()` — Splits the current node into four new nodes according to geometric construction, direction set, topology, and identity rules described below. When splitting, the method MUST increment the level and establish bidirectional connections between the four resulting nodes.
 
 ---
 
@@ -112,6 +112,15 @@ For each new node:
 - Split does not connect the new nodes A B C to each other.
 - This avoids interfering with Plan/Planet generation rules.
 
+3. Internal Node Interconnection
+
+If the 4 nodes created are NodeCenter, NodeA, NodeB, NodeC, establish the following bidirectional connections:
+- `NodeCenter.nodeI = NodeA` and reciprocally `NodeA.nodeK = NodeCenter`
+- `NodeCenter.nodeJ = NodeB` and reciprocally `NodeB.nodeJ = NodeCenter`
+- `NodeCenter.nodeK = NodeC` and reciprocally `NodeC.nodeI = NodeCenter`
+
+These connections establish the internal topology of the split result before the caller reconnects them to neighboring split nodes.
+
 ### Node Identity Rules
 Each new node must store:
 
@@ -144,7 +153,7 @@ Node split()
 - Compute perpendicular directions
 - Create nodes
   - For each created node set node.level = old_level + 1
-- connect nodes to center node
+- Establish internal interconnections (NodeCenter ↔ NodeA/B/C)
 - Return center node 
 
 ---
@@ -197,7 +206,7 @@ class Plan {
 
 ### generateNodes Rules
 
-- Start by generating 5 triangles to form a pentagon (sides of pentagon equal to NodeOptions.sideLength, direction of pentagon is from props) where nodes are connected through their K vectors and the next node.
+- Start by generating 5 triangles to form a pentagon (sides of pentagon equal to NodeOptions.sideLength, direction of pentagon is from props) where nodes are connected through their K vectors and subsequent nodes also create their I node as a mirrored cut through the triangle.
 - For each created node, create the child nodeJ where the new triangle is the mirror of the current triangle, mirrored along the base of the current triangle.
 - For each Node, the direction set depends on the node's center and the vector from the center to the origin.
 - Two main direction sets exist:
@@ -249,14 +258,14 @@ class Planet {
 
 ### Methods
 
-- `generate()` — Generates the northern plan nodes with the pentagon direction pointing to the top and the southern plan nodes with the pentagon direction pointing to the bottom. Then connects the north and south plans via interstitial belt linkage.
+- `generate()` — Generates the northern plan nodes with the pentagon direction pointing to the top and the southern plan nodes with the pentagon direction pointing to the bottom. Then connects the north and south caps via their I and K node links.
 - `draw()` — Draws both the northern and southern plans in an SVG, displaying all relevant information doubled for clarity.
 - `split()` — Iterates through north plan nodes, calls `split()` on each node, replaces current by returned node and connects the newly created nodes I, J, K between adjacent split nodes.
 
 ### Generate function Rules
 
 ### **Core Principle: Dual-Pentagon Dual-Cap Assembly**
-An icosahedron breaks down into two 5-triangle pentagonal caps (North and South) and a 10-triangle middle antiprismatic belt. Connecting North nodes to South nodes via their remaining unconnected directional slots (I and K) forms the complete structure.
+An icosahedron breaks down into two 5-triangle pentagonal caps (North and South) and a 10-triangle middle antiprismatic belt. Connecting North nodes to South nodes via their remaining unconnected directional ports establishes the complete structure.
 
 ```
        [ North Cap: 5 Triangles ]
@@ -286,14 +295,14 @@ An icosahedron breaks down into two 5-triangle pentagonal caps (North and South)
 3. **Direction & Alignment Inversion**
 
 - **Vector Reversal:** South plan directional vectors (I, J, K) must invert their Z-axis (or vertical orientation parameter) relative to North.
-- **Direction Set Swap:** If `North[m]` uses the **NormalDirection** direction set, the corresponding mirrored connection entry on `South[m]` must default to the **RevertedDirection** direction set to maintain consistent handedness across the antiprismatic belt.
+- **Direction Set Swap:** If `North[m]` uses the **NormalDirection** direction set, the corresponding mirrored connection entry on `South[m]` must default to the **RevertedDirection** direction set to maintain the icosahedron's geometric balance.
 
 ---
 
 ## Planet.split() Method Specification
 
 ### Overview
-The `Planet.split()` method coordinates splitting across the north (and symmetric south) caps and reconnects the resulting split-centers to grow the antiprismatic belt between caps. Splits are performed layer by layer, with each iteration subdividing the current generation and maintaining topological coherence.
+The `Planet.split()` method coordinates splitting across the north (and symmetric south) caps and reconnects the resulting split-centers to grow the antiprismatic belt between caps. Splits are performed in synchronized waves to maintain topological consistency.
 
 ### Connection rules
 
@@ -301,7 +310,7 @@ The `Planet.split()` method coordinates splitting across the north (and symmetri
 - The connection pattern between newly created centers uses the following pointer rewiring after each pair-split operation:
   - nodeSplitedCenter.nexti.nexti = nodeTargetSplitedCenter.nextj.nextk
   - nodeSplitedCenter.nextj.nexti = nodeTargetSplitedCenter.nextk.nextk
-- The traversal progresses along nexti until it completes a loop back to the start; then it begins the same traversal starting from the start node's nodeJ and repeats. The whole routine terminates when all directional ports are filled to the same split level.
+- The traversal progresses along nexti until it completes a loop back to the start; then it begins the same traversal starting from the start node's nodeJ and repeats. The whole routine terminates when all nodes at the new level have been processed and their interconnections established.
 
 ### Signature
 
