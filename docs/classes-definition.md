@@ -9,10 +9,9 @@ The `Node` class represents a geometric structure composed of a center point, di
 
 - **Geometry**
   - `center` — Point representing the center of the node.
-  - `vertices` — Array of the three triangle vertices (`[A, B, C]`).
   - `direction_to_origin` — Vector from the node center toward the origin.
   - `directions` — Array of directional vectors (`[i, j, k]`).
-  - `uvs` — Array of UV coordinates (`[uvA, uvB, uvC]`).
+  - `uvs` — Array of UV coordinates (`[A, B, C]`).
   - `direction_of_node` — Direction set type for the node (NormalDirection or RevertedDirection).
 - **Topology**
   - `children` — List of child nodes (3 nodes).
@@ -24,10 +23,9 @@ The `Node` class represents a geometric structure composed of a center point, di
 class Node {
   // --- Geometry ---
   Point center
-  Point[] vertices        // [A, B, C]
   Vector direction_to_origin
   Vector[] directions     // [i, j, k]
-  UV[] uvs                // [uvA, uvB, uvC]
+  UV[] uvs                // [A, B, C]
   DirectionSet direction_of_node // NormalDirection or RevertedDirection
 
   // --- Topology ---
@@ -56,7 +54,7 @@ The choice between NormalDirection and RevertedDirection depends on the node's c
 
 ### Methods
 
-- `split()` — Splits the current node into four new nodes according to geometric construction, direction set, topology, and identity rules described below. When splitting, the method MUST increment the level of each new node and establish internal interconnections.
+- `split()` — Splits the current node into four new nodes according to geometric construction, direction set, topology, and identity rules described below. When splitting, the method MUST increment the level for each new node.
 
 ---
 
@@ -83,9 +81,9 @@ Each new node gets a center computed exactly like the parent:
 3. UV Subdivision
 UVs subdivide barycentrically:
 
-- uvMAB = midpoint(uvA, uvB)
-- uvMBC = midpoint(uvB, uvC)
-- uvMCA = midpoint(uvC, uvA)
+- uvA_mid = midpoint(A, B)
+- uvB_mid = midpoint(B, C)
+- uvC_mid = midpoint(C, A)
 Each new node receives the corresponding UV triplet.
 
 ### Direction Set Rules
@@ -274,14 +272,14 @@ class Planet {
 
 ### Methods
 
-- `generate()` — Generates the northern plan nodes with the pentagon direction pointing to the top and the southern plan nodes with the pentagon direction pointing to the bottom. Then connects the north and south caps via interstitial belt linkage.
+- `generate()` — Generates the northern plan nodes with the pentagon direction pointing to the top and the southern plan nodes with the pentagon direction pointing to the bottom. Then connects the north and south caps.
 - `draw()` — Draws both the northern and southern plans in an SVG, displaying all relevant information doubled for clarity.
 - `split()` — Iterates through north plan nodes, calls `split()` on each node, replaces current by returned node and connects the newly created nodes I, J, K between adjacent split nodes.
 
 ### Generate function Rules
 
 ### **Core Principle: Dual-Pentagon Dual-Cap Assembly**
-An icosahedron breaks down into two 5-triangle pentagonal caps (North and South) and a 10-triangle middle antiprismatic belt. Connecting North nodes to South nodes via their remaining unconnected directional ports creates the complete structure.
+An icosahedron breaks down into two 5-triangle pentagonal caps (North and South) and a 10-triangle middle antiprismatic belt. Connecting North nodes to South nodes via their remaining unconnected directional ports.
 
 ```
        [ North Cap: 5 Triangles ]
@@ -311,7 +309,7 @@ An icosahedron breaks down into two 5-triangle pentagonal caps (North and South)
 3. **Direction & Alignment Inversion**
 
 - **Vector Reversal:** South plan directional vectors (I, J, K) must invert their Z-axis (or vertical orientation parameter) relative to North.
-- **Direction Set Swap:** If `North[m]` uses the **NormalDirection** direction set, the corresponding mirrored connection entry on `South[m]` must default to the **RevertedDirection** direction set to maintain proper alignment.
+- **Direction Set Swap:** If `North[m]` uses the **NormalDirection** direction set, the corresponding mirrored connection entry on `South[m]` must default to the **RevertedDirection** direction set to maintain consistent handedness.
 
 ---
 
@@ -326,7 +324,7 @@ The `Planet.split()` method coordinates splitting across the north (and symmetri
 - The connection pattern between newly created centers uses the following pointer rewiring after each pair-split operation:
   - nodeSplitedCenter.nexti.nexti = nodeTargetSplitedCenter.nextj.nextk
   - nodeSplitedCenter.nextj.nexti = nodeTargetSplitedCenter.nextk.nextk
-- The traversal progresses along nexti until it completes a loop back to the start; then it begins the same traversal starting from the start node's nodeJ and repeats. The whole routine terminates when all nodes have been split to the target depth.
+- The traversal progresses along nexti until it completes a loop back to the start; then it begins the same traversal starting from the start node's nodeJ and repeats. The whole routine terminates when all nodes are at the target depth.
 
 ### Signature
 
