@@ -3,7 +3,7 @@
 ## Node Class Definition
 
 ### Overview
-The `Node` class represents a geometric structure composed of a center point, directional vectors, UV coordinates, and recursive child nodes. This design supports hierarchical or fractal-like spatial structures and connectivity between nodes.
+The `Node` class represents a geometric structure composed of a center point, directional vectors, UV coordinates, and recursive child nodes. This design supports hierarchical or fractal-like spatial [...]
 
 ### Structure
 
@@ -15,6 +15,7 @@ The `Node` class represents a geometric structure composed of a center point, di
 - `uvs` — Array of UV coordinates (`[uvA, uvB, uvC]`).
 - **Topology**
 - `children` — List of child nodes (3 nodes).
+- `level` — Integer representing the split depth of the node (defaults to 0).
 
 ### Pseudocode Representation
 
@@ -29,12 +30,15 @@ class Node {
 
   // --- Topology ---
   List<Node> children     //  3 nodes
+
+  // --- Identity ---
+  Integer level = 0       // split depth; starts at 0 by default
 }
 ```
 
 ### Methods
 
-- `split()` — Splits the current node into four new nodes according to geometric construction, direction set, topology, and identity rules described below.
+- `split()` — Splits the current node into four new nodes according to geometric construction, direction set, topology, and identity rules described below. When splitting, the method MUST increment the split `level` for each of the four created nodes by one (new_node.level = old_level + 1). The "old level" refers to the pre-split `level` value of the node on which `split()` was called.
 
 ---
 
@@ -122,6 +126,7 @@ Each new node must store:
 - New UVs
 - New directions
 - Direction set type (First/Second)
+- `level` — set to the parent's previous level + 1 (i.e. new_node.level = old_level + 1). The "old level" is the node's level before calling split().
 
 ### Full Method Specification
 **Signature**
@@ -136,6 +141,7 @@ Nodes:
 - Center node connected to each node corner
 **Steps**
 
+- Record old_level = this.level
 - Compute midpoints
 - Compute new UV midpoints
 - Build 4 triangles
@@ -143,6 +149,7 @@ Nodes:
 - Determine direction set for each
 - Compute perpendicular directions
 - Create nodes
+  - For each created node set node.level = old_level + 1
 - connect nodes to center node
 - Return center node 
 
@@ -231,12 +238,11 @@ class Plan {
 ## Planet Class Definition
 
 ### Overview
-The `Planet` class serves as the top-level container for the global structure, encapsulating both the northern and southern `Plan` instances to represent a complete icosahedron-based spherical body.
+The `Planet` class serves as the top-level container for the global structure, encapsulating both the northern and southern `Plan` instances to represent a complete icosahedron-based spherical bo[...]
 
 ### Structure
 
-- **Parameters**
-- `north` — An instance of the `Plan` class representing the northern hemisphere/map.
+- **Parameters**n- `north` — An instance of the `Plan` class representing the northern hemisphere/map.
 - `south` — An instance of the `Plan` class representing the southern hemisphere/map.
 
 ### Pseudocode Representation
@@ -296,7 +302,7 @@ An icosahedron breaks down into two 5-triangle pentagonal caps (North and South)
 ## Planet.split() Method Specification
 
 ### Overview
-The `Planet.split()` method coordinates splitting across the north (and symmetric south) caps and reconnects the resulting split-centers to grow the antiprismatic belt between caps. Splits are performed and joined in a traversal order that prioritizes connections along the nodeI direction first; once a closed loop (back to the starting node) is completed it advances to nodeJ of the starting node and repeats. The process continues until neighbouring nodes at the next level are already split (i.e. their nexti, nextj and nextk references are non-null at the target level).
+The `Planet.split()` method coordinates splitting across the north (and symmetric south) caps and reconnects the resulting split-centers to grow the antiprismatic belt between caps. Splits are pe[...]
 
 ### Connection rules
 
@@ -304,7 +310,7 @@ The `Planet.split()` method coordinates splitting across the north (and symmetri
 - The connection pattern between newly created centers uses the following pointer rewiring after each pair-split operation:
   - nodeSplitedCenter.nexti.nexti = nodeTargetSplitedCenter.nextj.nextk
   - nodeSplitedCenter.nextj.nexti = nodeTargetSplitedCenter.nextk.nextk
-- The traversal progresses along nexti until it completes a loop back to the start; then it begins the same traversal starting from the start node's nodeJ and repeats. The whole routine terminates when the traversal reaches a node whose nexti, nextj and nextk at the next level are already present (non-null), meaning that area has been processed.
+- The traversal progresses along nexti until it completes a loop back to the start; then it begins the same traversal starting from the start node's nodeJ and repeats. The whole routine terminate[...]
 
 ### Signature
 
@@ -354,7 +360,7 @@ while not (nextNode.nexti.level == currentNode.level and nextNode.nextj.level ==
 
 - split() on a Node returns the newly created center node (per Node.split() specification). Planet.split() must use those returned center nodes for rewiring.
 - All level comparisons refer to the node.level (or split depth). Comparing levels allows the algorithm to detect whether a neighbour has already been processed to the same depth.
-- Pointer assignments (nexti/nextj/nextk) must preserve reciprocity where required by the topology (i.e., when setting A.nexti = B, ensure the corresponding reciprocal pointer on B is set if the topology expects it).
+- Pointer assignments (nexti/nextj/nextk) must preserve reciprocity where required by the topology (i.e., when setting A.nexti = B, ensure the corresponding reciprocal pointer on B is set if the [...]
 - This specification assumes consistent use of child index naming (I, J, K) mapped to children[0..2] for implementation.
 
 ---
