@@ -3,20 +3,20 @@
 ## Node Class Definition
 
 ### Overview
-The `Node` class represents a geometric structure composed of a center point, directional vectors, UV coordinates, and recursive child nodes. This design supports hierarchical or fractal-like spati[...]
+The `Node` class represents a geometric structure composed of a center point, directional vectors, UV coordinates, and recursive child nodes. This design supports hierarchical or fractal-like spatial relationships.
 
 ### Structure
 
 - **Geometry**
-- `center` — Point representing the center of the node.
-- `vertices` — Array of the three triangle vertices (`[A, B, C]`).
-- `direction_to_origin` — Vector from the node center toward the origin.
-- `directions` — Array of directional vectors (`[i, j, k]`).
-- `uvs` — Array of UV coordinates (`[uvA, uvB, uvC]`).
-- `direction_of_node` — Direction set type for the node (NormalDirection or RevertedDirection).
+  - `center` — Point representing the center of the node.
+  - `vertices` — Array of the three triangle vertices (`[A, B, C]`).
+  - `direction_to_origin` — Vector from the node center toward the origin.
+  - `directions` — Array of directional vectors (`[i, j, k]`).
+  - `uvs` — Array of UV coordinates (`[uvA, uvB, uvC]`).
+  - `direction_of_node` — Direction set type for the node (NormalDirection or RevertedDirection).
 - **Topology**
-- `children` — List of child nodes (3 nodes).
-- `level` — Integer representing the split depth of the node (defaults to 0).
+  - `children` — List of child nodes (3 nodes).
+  - `level` — Integer representing the split depth of the node (defaults to 0).
 
 ### Pseudocode Representation
 
@@ -40,7 +40,7 @@ class Node {
 
 ### Methods
 
-- `split()` — Splits the current node into four new nodes according to geometric construction, direction set, topology, and identity rules described below. When splitting, the method MUST increm[...]
+- `split()` — Splits the current node into four new nodes according to geometric construction, direction set, topology, and identity rules described below. When splitting, the method MUST increment the level.
 
 ---
 
@@ -56,7 +56,7 @@ Let:
 - MCA = midpoint(C, A)
 These three midpoints form the center triangle.
 
-1. Compute New Centers
+2. Compute New Centers
 Each new node gets a center computed exactly like the parent:
 
 - CenterCornerA = centroid(A, MAB, MCA)
@@ -64,7 +64,7 @@ Each new node gets a center computed exactly like the parent:
 - CenterCornerC = centroid(C, MCA, MBC)
 - CenterMiddle = centroid(MAB, MBC, MCA)
 
-1. UV Subdivision
+3. UV Subdivision
 UVs subdivide barycentrically:
 
 - uvMAB = midpoint(uvA, uvB)
@@ -78,44 +78,36 @@ Each new node receives the corresponding UV triplet.
 
 - Corner nodes inherit the same direction set (NormalDirection or RevertedDirection) as the parent.
 - The center node always flips direction set:
-
-- If parent uses NormalDirection, center uses RevertedDirection
-- If parent uses RevertedDirection, center uses NormalDirection
+  - If parent uses NormalDirection, center uses RevertedDirection
+  - If parent uses RevertedDirection, center uses NormalDirection
 This matches your existing rule for nodeJ mirroring.
 
-1. Direction Vector Recalculation
+2. Direction Vector Recalculation
 For each new node:
 
 - Compute vector V = center → origin
 - Apply direction set rules:
-
-- NormalDirection set:
-
-- I ⊥ AB
-- J ⊥ BC
-- K ⊥ CA
-- RevertedDirection set:
-
-- K ⊥ AB
-- J ⊥ BC
-- I ⊥ CA
-Perpendiculars must be computed from the new triangle edges, not the parent.
+  - **NormalDirection set:**
+    - I ⊥ AB
+    - J ⊥ BC
+    - K ⊥ CA
+  - **RevertedDirection set:**
+    - K ⊥ AB
+    - J ⊥ BC
+    - I ⊥ CA
+- Perpendiculars must be computed from the new triangle edges, not the parent.
 
 ### Topology Rules
 
 1. Each new node has 3 children
 
-- But after split(),  only the node center should be connected to the new created nodes A B C
+- But after split(), only the node center should be connected to the new created nodes A B C
 - Split does not recursively generate children; it only produces the 4 new nodes.
+- split() returns the center node
 
-- split() returns:
-
-```
-nodeCenter 
-```
 - The caller decides how to reattach the new created nodes to neighbors splitter nodes.
 
-1. No cross​‑connections
+2. No cross-connections
 
 - Split does not connect the new nodes A B C to each other.
 - This avoids interfering with Plan/Planet generation rules.
@@ -134,13 +126,13 @@ Each new node must store:
 **Signature**
 
 ```
-Node[] split()
+Node split()
 ```
+
 **Returns**
 
-Nodes:
-
 - Center node connected to each node corner
+
 **Steps**
 
 - Record old_level = this.level
@@ -165,7 +157,7 @@ The `NodeOptions` class defines configuration parameters related to node dimensi
 ### Structure
 
 - **Parameters**
-- `sideLength` — The length of the sides of the node.
+  - `sideLength` — The length of the sides of the node.
 
 ### Pseudocode Representation
 
@@ -188,7 +180,7 @@ The `Plan` class serves as the central structure of the system, encapsulating a 
 ### Structure
 
 - **Parameters**
-- `node` — An instance of the `Node` class representing the primary node of the plan.
+  - `node` — An instance of the `Node` class representing the primary node of the plan.
 
 ### Pseudocode Representation
 
@@ -205,47 +197,43 @@ class Plan {
 
 ### generateNodes Rules
 
-- Start by generating 5 triangles to form a pentagon (sides of pentagon equal to NodeOptions.sideLength, direction of pentagon is from props) where nodes are connected through their K vectors and[...]
+- Start by generating 5 triangles to form a pentagon (sides of pentagon equal to NodeOptions.sideLength, direction of pentagon is from props) where nodes are connected through their K vectors and the next node.
 - For each created node, create the child nodeJ where the new triangle is the mirror of the current triangle, mirrored along the base of the current triangle.
 - For each Node, the direction set depends on the node's center and the vector from the center to the origin.
-- two main direction sets exist:
-
-- **NormalDirection:**
-
-- I = perpendicular to AB going from center
-- J = perpendicular to BC going from center
-- K = perpendicular to CD going from center
-- **RevertedDirection:**
-
-- K = perpendicular to AB going from center
-- J = perpendicular to BC going from center
-- I = perpendicular to CD going from center
+- Two main direction sets exist:
+  - **NormalDirection:**
+    - I = perpendicular to AB going from center
+    - J = perpendicular to BC going from center
+    - K = perpendicular to CA going from center
+  - **RevertedDirection:**
+    - K = perpendicular to AB going from center
+    - J = perpendicular to BC going from center
+    - I = perpendicular to CA going from center
 - The choice between NormalDirection and RevertedDirection depends on the node's center and the vector from center to origin.
 - Child node relationships:
-
-- child nodeI should have current node as target nodeK
-- child nodeK should have current node as target nodeI
-- child nodeJ should have current node as target nodeJ
+  - child nodeI should have current node as target nodeK
+  - child nodeK should have current node as target nodeI
+  - child nodeJ should have current node as target nodeJ
 - Direction inheritance:
-
-- nodeJ always switches vector directions between NormalDirection and RevertedDirection (if current is NormalDirection, childJ uses RevertedDirection, and vice versa)
-- nodeI and nodeK use the same direction set as the current node
+  - nodeJ always switches vector directions between NormalDirection and RevertedDirection (if current is NormalDirection, childJ uses RevertedDirection, and vice versa)
+  - nodeI and nodeK use the same direction set as the current node
 - Triangle vertices (A, B, C), center, triangle direction (NormalDirection or RevertedDirection), and vector from center to origin determine the geometry of the node's triangle.
-- The base of the first five triangles should be the pentagon sides and the sides of the triangle are the diameter of the pentagon , and the apex of each triangle is at the origin. This setup rot[...]
-- if the pentagon direction top or take the normal first and second, if bottom first become second and second become first
-- The process starts by generating 5 triangles forming a pentagon where nodes connect through their K vectors and the next node, and all nodes create the I node as a mirror cut through the triang[...]
+- The base of the first five triangles should be the pentagon sides and the sides of the triangle are the diameter of the pentagon, and the apex of each triangle is at the origin.
+- If pentagon direction is top, use normal order; if bottom, reverse the first and second vertices.
+- The process starts by generating 5 triangles forming a pentagon where nodes connect through their K vectors and subsequent nodes also create their I node as a mirrored cut through the triangle.
 
 ---
 
 ## Planet Class Definition
 
 ### Overview
-The `Planet` class serves as the top-level container for the global structure, encapsulating both the northern and southern `Plan` instances to represent a complete icosahedron-based spherical bo[...]
+The `Planet` class serves as the top-level container for the global structure, encapsulating both the northern and southern `Plan` instances to represent a complete icosahedron-based spherical body.
 
 ### Structure
 
-- **Parameters**n- `north` — An instance of the `Plan` class representing the northern hemisphere/map.
-- `south` — An instance of the `Plan` class representing the southern hemisphere/map.
+- **Parameters**
+  - `north` — An instance of the `Plan` class representing the northern hemisphere/map.
+  - `south` — An instance of the `Plan` class representing the southern hemisphere/map.
 
 ### Pseudocode Representation
 
@@ -261,14 +249,14 @@ class Planet {
 
 ### Methods
 
-- `generate()` — Generates the northern plan nodes with the pentagon direction pointing to the top and the southern plan nodes with the pentagon direction pointing to the bottom. Then connects [...]
+- `generate()` — Generates the northern plan nodes with the pentagon direction pointing to the top and the southern plan nodes with the pentagon direction pointing to the bottom. Then connects the north and south plans via interstitial belt linkage.
 - `draw()` — Draws both the northern and southern plans in an SVG, displaying all relevant information doubled for clarity.
-- `split()` — Iterates through north plan node, calls `split()` on each node, replace current by returned node and connects the newly created nodes I j k between adjacent split nodes (nodeI, no[...]
+- `split()` — Iterates through north plan nodes, calls `split()` on each node, replaces current by returned node and connects the newly created nodes I, J, K between adjacent split nodes.
 
 ### Generate function Rules
 
 ### **Core Principle: Dual-Pentagon Dual-Cap Assembly**
-An icosahedron breaks down into two 5-triangle pentagonal caps (North and South) and a 10-triangle middle antiprismatic belt. Connecting North nodes to South nodes via their remaining unconnected[...]
+An icosahedron breaks down into two 5-triangle pentagonal caps (North and South) and a 10-triangle middle antiprismatic belt. Connecting North nodes to South nodes via their remaining unconnected directional slots (I and K) forms the complete structure.
 
 ```
        [ North Cap: 5 Triangles ]
@@ -276,7 +264,7 @@ An icosahedron breaks down into two 5-triangle pentagonal caps (North and South)
       (I)    (K)   (I)   (K)   (I)   <-- Unconnected Outer Ports
        |      |     |     |      |
       (K)    (I)   (K)   (I)   (K)   <-- Interlocking South Ports
-             |     |     |     /
+              |     |     |     /
        [ South Cap: 5 Triangles ]
 ```
 
@@ -287,24 +275,25 @@ An icosahedron breaks down into two 5-triangle pentagonal caps (North and South)
 - Call `north.generateNodes(options, Vector(0, 1, 0))` with the top direction vector.
 - Call `south.generateNodes(options, Vector(0, -1, 0))` with the bottom direction vector.
 - Both caps produce 5 base triangles (nodes 0 through 4) arranged circularly, linked internally via `J` (mirrored base) and adjacent `K`/`I` vectors.
+
 2. **Interstitial Belt Linkage (North-to-South Alignment)**
 
-- Every North base node Nm  (where m {5,6,7,8,9}) has two open directional slots (I and K).
-- Because the South cap is inverted and offset by π/5 (36°), South base nodes Sn  interlock with North nodes in an alternating zig-zag fashion:
+- Every North base node N_m (where m ∈ {0,1,2,3,4}) has two open directional slots (I and K).
+- Because the South cap is inverted and offset by π/5 (36°), South base nodes S_n interlock with North nodes in an alternating zig-zag fashion:
+  - **Link Rule A (Node I Connection):** Connect `North[m].children[I]` to `South[m].node`. Reciprocally, assign `South[m].children[K] = North[m].node`.
+  - **Link Rule B (Node K Connection):** Connect `North[m].children[K]` to `South[(m + 1) % 5].node`. Reciprocally, assign `South[(m + 1) % 5].children[I] = North[m].node`.
 
-- **Link Rule A (Node I Connection):** Connect `North[m].children[I]` to `South[m].node`. Reciprocally, assign `South[m].children[K] = North[m].node`.
-- **Link Rule B (Node K Connection):** Connect `North[m].children[K]` to `South[(m + 1) % 5].node`. Reciprocally, assign `South[(m + 1) % 5].children[I] = North[m].node`.
-3. **Direction & Alignment Inversion**n
+3. **Direction & Alignment Inversion**
 
 - **Vector Reversal:** South plan directional vectors (I, J, K) must invert their Z-axis (or vertical orientation parameter) relative to North.
-- **Direction Set Swap:** If `North[m]` uses the **NormalDirection** direction set, the corresponding mirrored connection entry on `South[m]` must default to the **RevertedDirection** direction set to maintain topolo[...]
+- **Direction Set Swap:** If `North[m]` uses the **NormalDirection** direction set, the corresponding mirrored connection entry on `South[m]` must default to the **RevertedDirection** direction set to maintain consistent handedness across the antiprismatic belt.
 
 ---
 
 ## Planet.split() Method Specification
 
 ### Overview
-The `Planet.split()` method coordinates splitting across the north (and symmetric south) caps and reconnects the resulting split-centers to grow the antiprismatic belt between caps. Splits are pe[...]
+The `Planet.split()` method coordinates splitting across the north (and symmetric south) caps and reconnects the resulting split-centers to grow the antiprismatic belt between caps. Splits are performed layer by layer, with each iteration subdividing the current generation and maintaining topological coherence.
 
 ### Connection rules
 
@@ -312,7 +301,7 @@ The `Planet.split()` method coordinates splitting across the north (and symmetri
 - The connection pattern between newly created centers uses the following pointer rewiring after each pair-split operation:
   - nodeSplitedCenter.nexti.nexti = nodeTargetSplitedCenter.nextj.nextk
   - nodeSplitedCenter.nextj.nexti = nodeTargetSplitedCenter.nextk.nextk
-- The traversal progresses along nexti until it completes a loop back to the start; then it begins the same traversal starting from the start node's nodeJ and repeats. The whole routine terminate[...]
+- The traversal progresses along nexti until it completes a loop back to the start; then it begins the same traversal starting from the start node's nodeJ and repeats. The whole routine terminates when all directional ports are filled to the same split level.
 
 ### Signature
 
@@ -362,8 +351,7 @@ while not (nextNode.nexti.level == currentNode.level and nextNode.nextj.level ==
 
 - split() on a Node returns the newly created center node (per Node.split() specification). Planet.split() must use those returned center nodes for rewiring.
 - All level comparisons refer to the node.level (or split depth). Comparing levels allows the algorithm to detect whether a neighbour has already been processed to the same depth.
-- Pointer assignments (nexti/nextj/nextk) must preserve reciprocity where required by the topology (i.e., when setting A.nexti = B, ensure the corresponding reciprocal pointer on B is set if the [...]
+- Pointer assignments (nexti/nextj/nextk) must preserve reciprocity where required by the topology (i.e., when setting A.nexti = B, ensure the corresponding reciprocal pointer on B is set if the relationship is bidirectional).
 - This specification assumes consistent use of child index naming (I, J, K) mapped to children[0..2] for implementation.
 
 ---
-
