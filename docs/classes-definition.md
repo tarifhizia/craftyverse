@@ -102,15 +102,12 @@ Perpendiculars must be computed from the new triangle edges, not the parent.
 - But after split(),  only the node center should be connected to the new created nodes A B C
 - Split does not recursively generate children; it only produces the 4 new nodes.
 
-1. Parent node is replaced
-
 - split() returns:
 
 ```
 nodeCenter 
 ```
-
-- The caller decides how to reattach them.
+- The caller decides how to reattach the new created nodes to neighbors splitter nodes.
 
 1. No cross​‑connections
 
